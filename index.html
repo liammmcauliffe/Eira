@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eira - Face Recognition Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .camera-container {
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 300px;
+            border: 1px solid #ccc;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .camera-controls {
+            margin-top: 10px;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 3px;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+
+        .status {
+            padding: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .list-container {
+            margin-top: 15px;
+        }
+
+        .list-item {
+            background: white;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item h4 {
+            color: #2c3e50;
+            margin-bottom: 3px;
+            font-size: 14px;
+        }
+
+        .list-item p {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Eira</h1>
+            <p>Face Recognition & Task Management System</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Add Person Section -->
+            <div class="section">
+                <h2>Add New Person</h2>
+                
+                <form id="personForm">
+                    <div class="form-group">
+                        <label for="personName">Name:</label>
+                        <input type="text" id="personName" required placeholder="Enter person's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="relationship">Relationship:</label>
+                        <select id="relationship" required>
+                            <option value="">Select relationship</option>
+                            <option value="You">You</option>
+                            <option value="Family">Family</option>
+                            <option value="Friend">Friend</option>
+                            <option value="Caregiver">Caregiver</option>
+                            <option value="Doctor">Doctor</option>
+                            <option value="Nurse">Nurse</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="camera-container">
+                        <video id="video" autoplay></video>
+                        <canvas id="canvas"></canvas>
+                        <div class="camera-controls">
+                            <button type="button" class="btn" id="startCamera">Start Camera</button>
+                            <button type="button" class="btn btn-success" id="capturePhoto" disabled>Capture Photo</button>
+                            <button type="button" class="btn btn-danger" id="stopCamera" disabled>Stop Camera</button>
+                        </div>
+                        <div id="photoPreview"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success" id="addPersonBtn" disabled>
+                        Add Person
+                    </button>
+                </form>
+
+                <div id="personStatus"></div>
+            </div>
+
+            <!-- Add Task Section -->
+            <div class="section">
+                <h2>Add New Task</h2>
+                
+                <form id="taskForm">
+                    <div class="form-group">
+                        <label for="taskTitle">Task Title:</label>
+                        <input type="text" id="taskTitle" required placeholder="e.g., Take Morning Medication">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskTime">Scheduled Time:</label>
+                        <input type="time" id="taskTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskActive">Status:</label>
+                        <select id="taskActive">
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        Add Task
+                    </button>
+                </form>
+
+                <div id="taskStatus"></div>
+            </div>
+        </div>
+
+        <!-- Lists Section -->
+        <div style="padding: 30px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <!-- People List -->
+                <div class="section">
+                    <h2>People</h2>
+                    <div id="peopleList" class="list-container">
+                        <div class="status info">Loading people...</div>
+                    </div>
+                </div>
+
+                <!-- Tasks List -->
+                <div class="section">
+                    <h2>Tasks</h2>
+                    <div id="tasksList" class="list-container">
+                        <div class="status info">Loading tasks...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE = 'http://localhost:5000/api';
+        
+        // Camera variables
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let stream = null;
+        let capturedImage = null;
+
+        // Form elements
+        const personForm = document.getElementById('personForm');
+        const taskForm = document.getElementById('taskForm');
+        const startCameraBtn = document.getElementById('startCamera');
+        const capturePhotoBtn = document.getElementById('capturePhoto');
+        const stopCameraBtn = document.getElementById('stopCamera');
+        const addPersonBtn = document.getElementById('addPersonBtn');
+
+        // Status elements
+        const personStatus = document.getElementById('personStatus');
+        const taskStatus = document.getElementById('taskStatus');
+        const peopleList = document.getElementById('peopleList');
+        const tasksList = document.getElementById('tasksList');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPeople();
+            loadTasks();
+        });
+
+        // Camera Functions
+        startCameraBtn.addEventListener('click', startCamera);
+        capturePhotoBtn.addEventListener('click', capturePhoto);
+        stopCameraBtn.addEventListener('click', stopCamera);
+
+        async function startCamera() {
+            try {
+                // Check if getUserMedia is available
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Camera access not supported. Please use HTTPS or localhost.');
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 640, 
+                        height: 480,
+                        facingMode: 'user'
+                    } 
+                });
+                video.srcObject = stream;
+                
+                startCameraBtn.disabled = true;
+                capturePhotoBtn.disabled = false;
+                stopCameraBtn.disabled = false;
+                
+                showStatus(personStatus, 'Camera started! Click "Capture Photo" to take a picture.', 'info');
+            } catch (error) {
+                console.error('Camera error:', error);
+                showStatus(personStatus, 'Error accessing camera: ' + error.message + '. Make sure you are using HTTPS or localhost.', 'error');
+            }
+        }
+
+        function capturePhoto() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            capturedImage = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Show preview
+            const preview = document.getElementById('photoPreview');
+            preview.innerHTML = `<img src="${capturedImage}" class="preview-image" alt="Captured Photo">`;
+            
+            addPersonBtn.disabled = false;
+            showStatus(personStatus, 'Photo captured! You can now add the person.', 'success');
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            video.srcObject = null;
+            startCameraBtn.disabled = false;
+            capturePhotoBtn.disabled = true;
+            stopCameraBtn.disabled = true;
+            
+            showStatus(personStatus, 'Camera stopped.', 'info');
+        }
+
+        // Form Submissions
+        personForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!capturedImage) {
+                showStatus(personStatus, 'Please capture a photo first!', 'error');
+                return;
+            }
+
+            const formData = {
+                name: document.getElementById('personName').value,
+                relationship: document.getElementById('relationship').value,
+                image_filename: `${document.getElementById('personName').value.toLowerCase().replace(' ', '_')}.jpg`
+            };
+
+            try {
+                showStatus(personStatus, 'Uploading photo...', 'info');
+                
+                // First upload the photo
+                const uploadResponse = await fetch(`${API_BASE}/upload-photo`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image_data: capturedImage,
+                        filename: formData.image_filename
+                    })
+                });
+
+                const uploadResult = await uploadResponse.json();
+
+                if (!uploadResult.success) {
+                    showStatus(personStatus, `Photo upload failed: ${uploadResult.error}`, 'error');
+                    return;
+                }
+
+                showStatus(personStatus, 'Photo uploaded! Adding person...', 'info');
+                
+                // Then add the person to database
+                const response = await fetch(`${API_BASE}/persons`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(personStatus, `Person "${formData.name}" added successfully with photo!`, 'success');
+                    personForm.reset();
+                    document.getElementById('photoPreview').innerHTML = '';
+                    capturedImage = null;
+                    addPersonBtn.disabled = true;
+                    loadPeople();
+                } else {
+                    showStatus(personStatus, `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(personStatus, `Error: ${error.message}`, 'error');
+            }
+        });
+
+        taskForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                title: document.getElementById('taskTitle').value,
+                scheduled_time: document.getElementById('taskTime').value + ':00',
+                is_active: document.getElementById('taskActive').value === 'true'
+            };
+
+            try {
+                showStatus(taskStatus, 'Adding task...', 'info');
+                
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(taskStatus, `Task "${formData.title}" added successfully!`, 'success');
+                    taskForm.reset();
+                    loadTasks();
+                } else {
+                    showStatus(taskStatus, `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(taskStatus, `Error: ${error.message}`, 'error');
+            }
+        });
+
+        // Load Data Functions
+        async function loadPeople() {
+            try {
+                const response = await fetch(`${API_BASE}/persons`);
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        peopleList.innerHTML = '<div class="status info">No people added yet.</div>';
+                    } else {
+                        peopleList.innerHTML = result.data.map(person => `
+                            <div class="list-item">
+                                <div>
+                                    <h4>${person.name}</h4>
+                                    <p>${person.relationship}</p>
+                                </div>
+                                <button class="delete-btn" onclick="deletePerson(${person.id})">Delete</button>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    peopleList.innerHTML = '<div class="status error">Error loading people</div>';
+                }
+            } catch (error) {
+                peopleList.innerHTML = '<div class="status error">Error loading people</div>';
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        tasksList.innerHTML = '<div class="status info">No tasks added yet.</div>';
+                    } else {
+                        tasksList.innerHTML = result.data.map(task => `
+                            <div class="list-item">
+                                <div>
+                                    <h4>${task.title}</h4>
+                                    <p>${task.scheduled_time} ${task.is_active ? 'Active' : 'Inactive'}</p>
+                                </div>
+                                <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    tasksList.innerHTML = '<div class="status error">Error loading tasks</div>';
+                }
+            } catch (error) {
+                tasksList.innerHTML = '<div class="status error">Error loading tasks</div>';
+            }
+        }
+
+        // Delete Functions
+        async function deletePerson(id) {
+            if (confirm('Are you sure you want to delete this person and their photo?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/persons/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showStatus(personStatus, `Person and photo deleted successfully! (${result.deleted_filename})`, 'success');
+                        loadPeople();
+                    } else {
+                        showStatus(personStatus, `Error: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    showStatus(personStatus, `Error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function deleteTask(id) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/tasks/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showStatus(taskStatus, 'Task deleted successfully!', 'success');
+                        loadTasks();
+                    } else {
+                        showStatus(taskStatus, `Error: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    showStatus(taskStatus, `Error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Utility Functions
+        function showStatus(element, message, type) {
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => {
+                element.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
